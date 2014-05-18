@@ -24,6 +24,7 @@
   "devDependencies": {
     "rimraf": "~2.2.2",
     "selfsigned": "~1.2.0",
-    "mocha": "~1.17.1"
+    "mocha": "~1.17.1",
+    "tape": "~2.13.1"
   }
 }
