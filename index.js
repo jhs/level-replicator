@@ -1,3 +1,20 @@
+exports.createServer = networkNode
+exports.server = networkNode
+exports.install = networkNode
+
+// The architecture of this code is two roles (outgoing data, incoming data) with three layers each.
+//
+//   Receives Data | Sends Data
+// +---------------+---------------+
+// | streamClient  | streamServer  |  Node.js stream, can be piped together
+// +---------------+---------------+
+// | netClient     | netServer     |  TCP and TLS wrapper around Node streams
+// +---------------+---------------+
+// | Importer      | Exporter      |  Robustness, long-running, retries, etc.
+// +---------------+---------------+
+//
+// Finally, there is a networkNode, which is an Importer and Exporter together.
+
 var path = require('path')
 var net = require('net')
 var EventEmitter = require('events').EventEmitter
@@ -166,8 +183,3 @@ function anti_checker(db) {
     return ! checker(key)
   }
 }
-
-
-exports.createServer = networkNode
-exports.server = networkNode
-exports.install = networkNode
