@@ -4,10 +4,7 @@ var secure = require('secure-peer')
 
 var PACKAGE = require('./package.json')
 
-var securepeer
-
 module.exports = function(localdb, changes, ee, config) {
-
   var connections = config.connections || {}
 
   connections.interval = connections.interval || 500
@@ -21,6 +18,7 @@ module.exports = function(localdb, changes, ee, config) {
     }
   })
 
+  var securepeer
   if (config.pems) {
     var pems = require(config.pems)
     config.public = pems.public
