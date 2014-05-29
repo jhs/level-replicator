@@ -14,7 +14,7 @@ var replicate = require('./replicate')
 var PACKAGE = require('./package.json')
 var securepeer
 
-function server(db, repDB, config) {
+function networkNode(db, repDB, config) {
   config = config || {}
   config.sep = config.sep || db.sep || '\xff'
 
@@ -161,6 +161,6 @@ function anti_checker(db) {
 }
 
 
-exports.createServer = server 
-exports.server = server
-exports.install = server
+exports.createServer = networkNode
+exports.server = networkNode
+exports.install = networkNode
