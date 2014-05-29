@@ -56,8 +56,9 @@ function networkServer(db, repDB, config) {
     securepeer = secure(pems)
   }
 
+  var is_sublevel = (repDB == 'sublevel')
   hooks(db)
-  if (repDB == 'sublevel') {
+  if (is_sublevel) {
     // Use a sublevel for replication. This is more robust but requires other clients and code to be aware.
     db = sublevel(db)
     repDB = db.sublevel('_replicator')
@@ -128,9 +129,12 @@ function networkServer(db, repDB, config) {
 
   server.on('close', function() {
     db.close(function() {
-      repDB.close(function() {
+      if (is_sublevel)
         server.emit('closed')
-      })
+      else
+        repDB.close(function() {
+          server.emit('closed')
+        })
     })
   })
 
