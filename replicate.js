@@ -1,10 +1,12 @@
+//module.exports =  // XXX
 var net = require('net')
 var multilevel = require('multilevel')
 var secure = require('secure-peer')
 
 var PACKAGE = require('./package.json')
 
-module.exports = function(localdb, changes, ee, config) {
+module.exports = function(localdb, changes, config) {
+  var ee = new EventEmitter
   var connections = config.connections || {}
 
   connections.interval = connections.interval || 500
@@ -171,6 +173,6 @@ module.exports = function(localdb, changes, ee, config) {
     }
   }, connections.interval)
 
-  return interval
+  return {interval:interval, events:ee}
 }
 

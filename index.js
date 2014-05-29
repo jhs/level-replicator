@@ -2,6 +2,13 @@ exports.createServer = networkNode
 exports.server = networkNode
 exports.install = networkNode
 
+exports.streamClient = streamClient
+exports.streamServer = streamServer
+exports.netClient = netClient
+exports.netServer = netServer
+exports.importer = importer
+exports.exporter = exporter
+
 // The architecture of this code is two roles (outgoing data, incoming data) with three layers each.
 //
 //   Receives Data | Sends Data
@@ -56,8 +63,13 @@ function networkNode(db, repDB, config) {
 }
 
 
+function importer() {
+}
+
+
 function networkClient(db, changesDB, config) {
-  var ee = new EventEmitter
+  return replicate.client(db, changesDB, config)
+}
   var replicator = replicate(db, changesDB, ee, config)
 
   return {interval:replicator, events:ee}
