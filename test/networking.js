@@ -34,9 +34,20 @@ describe('Replication server', function () {
       })
     })
 
-    after(function() {
+    after(function(end) {
+      srv1.on('error', function() {})
+      srv2.on('error', function() {})
+      srv1.on('closed', closed)
+      srv2.on('closed', closed)
       srv1.close()
       srv2.close()
+
+      var count = 0
+      function closed() {
+        count += 1
+        if (count == 2)
+          end()
+      }
     })
   })
 })
