@@ -24,10 +24,6 @@ function networkNode(db, repDB, config) {
     securepeer = secure(pems)
   }
 
-  var opts = {
-    valueEncoding: 'json'
-  }
-
   var ee = new EventEmitter
 
   ee.on('error', function(err) {
