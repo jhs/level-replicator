@@ -12,11 +12,43 @@ var secure = require('secure-peer')
 
 var replicate = require('./replicate')
 var PACKAGE = require('./package.json')
-var securepeer
+
 
 function networkNode(db, repDB, config) {
   config = config || {}
-  config.sep = config.sep || db.sep || '\xff'
+  config.auth = config.auth || function(user, cb) { cb(null, user) }
+  config.access = config.access || function() { return true }
+
+  var server = networkServer(db, repDB, config)
+  server.on('ready', function(changes) {
+    var client = networkClient(db, changes, config)
+
+    server.on('close', function() {
+      clearInterval(client.interval)
+    })
+
+    client.events.on('compatible', function(version) {
+      server.emit('compatible', version)
+    })
+
+    // As a full-duplex "node", client errors are also server errors.
+    client.events.on('error', function(er) { server.emit('error', er) })
+  })
+
+  return server
+}
+
+
+function networkClient(db, changesDB, config) {
+  var ee = new EventEmitter
+  var replicator = replicate(db, changesDB, ee, config)
+
+  return {interval:replicator, events:ee}
+}
+
+
+function networkServer(db, repDB, config) {
+  var securepeer
 
   if (config.pems) {
     var pems = require(config.pems)
@@ -24,18 +56,7 @@ function networkNode(db, repDB, config) {
     securepeer = secure(pems)
   }
 
-  var ee = new EventEmitter
-
-  ee.on('error', function(err) {
-    server.emit('error', err)
-  })
-
-  ee.on('compatible', function(version) {
-    server.emit('compatible', version)
-  })
-
   hooks(db)
-
   if (repDB == 'sublevel') {
     // Use a sublevel for replication. This is more robust but requires other clients and code to be aware.
     db = sublevel(db)
@@ -75,28 +96,18 @@ function networkNode(db, repDB, config) {
 
   changes.fetch = function(key, cb) {
     db.get(key, cb)
-    ee.emit('fetch', key)
+    server.emit('fetch', key)
   }
 
   changes.version = function(cb) {
     repDB.get('version', function(er, version) {
+      cb(er, version)
       if (er)
-        return ee.emit('error', er)
-      cb(null, version)
+        server.emit('error', er)
     })
   }
 
-  config.access = config.access || function() {
-    return true
-  }
-
-  config.auth = config.auth || function(user, cb) {
-    cb(null, user)
-  }
-
   var server = net.createServer(function (con) {
-    ee.emit('connection')
-
     if (securepeer && config.pems) {
 
       var securedpeer = securepeer(function (stream) {
@@ -113,13 +124,9 @@ function networkNode(db, repDB, config) {
     else {
       con.pipe(multilevel.server(changes, config)).pipe(con)
     }
-
   })
 
-  var replicator = replicate(db, changes, ee, config)
-
   server.on('close', function() {
-    clearInterval(replicator)
     db.close(function() {
       repDB.close(function() {
         server.emit('closed')
@@ -130,13 +137,13 @@ function networkNode(db, repDB, config) {
   // Initialize the changes database structure.
   repDB.put('version', PACKAGE.version, function(er) {
     if(er)
-      return ee.emit('error', er)
+      return server.emit('error', er)
 
     if (config.listen == 'skip')
       server.emit('ready', changes)
     else
       server.listen(config.port || 8000, function() {
-        ee.emit('listening', config.port || 8000)
+        server.emit('listening', config.port || 8000)
         server.emit('ready', changes)
       })
   })
